@@ -4,8 +4,10 @@ use hopf_ml::algebra::{Tree, TreeBuilder};
 use hopf_ml::applications::{
     DualStreamTransformer, AttentionMechanism, AlgebraStream, GeometryStream,
     HopfChain, HopfContract, HopfOperation, AlgebraicTransaction, AlgebraicObject,
-    QuantumTreeState, HopfGate, HopfQuantumCircuit, HopfVQE, SizeObservable,
+    QuantumTreeState, HopfGate, HopfQuantumCircuit, HopfVQE, TreeObservable,
+    ComputationProof,
 };
+use hopf_ml::{Antipode, CoProduct};
 use hopf_ml::core::{
     HopfInvariantLoss, AlgebraicConstraints, HopfFlow, GeometricHopfFlow,
     HyperbolicEmbedding, SphericalEmbedding, CGA, GeometricEmbedding,
@@ -192,18 +194,19 @@ fn demo_blockchain(trees: &[Tree]) {
 
     // Add transactions
     for (i, tree) in trees.iter().take(2).enumerate() {
-        let tx = AlgebraicTransaction {
-            id: format!("tx_{}", i),
-            operation: HopfOperation::Antipode,
-            input: AlgebraicObject::Tree(tree.clone()),
-            output: AlgebraicObject::Forest(tree.antipode()),
-            proof: hopf_ml::applications::blockchain::ComputationProof {
-                computation_hash: "proof_hash".to_string(),
-                witness: vec![],
-                verification_key: "verifier".to_string(),
-            },
-            timestamp: i as u64,
-        };
+        let proof = ComputationProof::new(
+            "proof_hash".to_string(),
+            vec![],
+            "verifier".to_string(),
+        );
+        let tx = AlgebraicTransaction::new(
+            format!("tx_{}", i),
+            HopfOperation::Antipode,
+            AlgebraicObject::Tree(tree.clone()),
+            AlgebraicObject::Forest(tree.antipode()),
+            proof,
+            i as u64,
+        );
 
         chain.add_transaction(tx).unwrap();
     }
@@ -262,7 +265,7 @@ fn demo_quantum(trees: &[Tree]) {
 }
 
 // Implement required trait for the example
-impl hopf_ml::applications::quantum::TreeObservable for SizeObservable {
+impl TreeObservable for SizeObservable {
     fn eigenvalue(&self, tree: &Tree) -> f64 {
         tree.size() as f64
     }

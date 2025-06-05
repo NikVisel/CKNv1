@@ -54,6 +54,20 @@ pub struct AlgebraicTransaction {
     timestamp: u64,
 }
 
+impl AlgebraicTransaction {
+    /// Create a new algebraic transaction
+    pub fn new(
+        id: String,
+        operation: HopfOperation,
+        input: AlgebraicObject,
+        output: AlgebraicObject,
+        proof: ComputationProof,
+        timestamp: u64,
+    ) -> Self {
+        Self { id, operation, input, output, proof, timestamp }
+    }
+}
+
 /// Types of Hopf operations
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum HopfOperation {
@@ -81,6 +95,13 @@ pub struct ComputationProof {
     witness: Vec<u8>,
     /// Verification key
     verification_key: String,
+}
+
+impl ComputationProof {
+    /// Create a new computation proof
+    pub fn new(computation_hash: String, witness: Vec<u8>, verification_key: String) -> Self {
+        Self { computation_hash, witness, verification_key }
+    }
 }
 
 impl HopfChain {
