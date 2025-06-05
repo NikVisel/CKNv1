@@ -2,6 +2,7 @@
 
 use crate::algebra::{Tree, Forest, HopfAlgebra, CoProduct, Antipode};
 use ndarray::{Array1, Array2};
+use num_traits::Zero;
 use std::collections::HashMap;
 
 /// Algebraic constraints for embeddings to respect Hopf structure
@@ -55,13 +56,13 @@ impl HopfInvariantLoss {
         
         // Create forest (product of trees)
         let forest = Forest::from(vec![tree1.clone(), tree2.clone()]);
-        
-        // For simplicity, we embed a forest as sum of tree embeddings
+
+        // For simplicity, we embed a forest as sum of tree embeddings for the
+        // expected result
         let forest_embed_expected = &embed1 + &embed2;
-        
-        // Compute actual forest embedding (would need forest embedding function)
-        // For now, we use the expected as a placeholder
-        let forest_embed_actual = forest_embed_expected.clone();
+
+        // Compute actual forest embedding using the provided embedding
+        let forest_embed_actual = self.embed_forest(&forest, &embed_fn);
         
         // MSE loss
         let diff = &forest_embed_actual - &forest_embed_expected;
@@ -80,7 +81,7 @@ impl HopfInvariantLoss {
         let antipode = tree.antipode();
         
         // For a forest, we sum embeddings of its trees
-        let mut embed_st = Array1::zeros(embed_t.len());
+        let mut embed_st = Array1::<f32>::zeros(embed_t.len());
         for tree in antipode.trees() {
             let tree_embed = self.get_or_compute_embedding(tree, &embed_fn);
             embed_st = embed_st + tree_embed;
@@ -88,7 +89,7 @@ impl HopfInvariantLoss {
         
         // Loss: φ(S(t)) + φ(t) ≈ 0
         let sum = &embed_st + &embed_t;
-        sum.mapv(|x| x * x).sum() / sum.len() as f32
+        sum.mapv(|x: f32| x * x).sum() / sum.len() as f32
     }
 
     /// Compute coproduct consistency loss using contrastive learning
@@ -274,7 +275,7 @@ impl HopfRegularizer {
         
         // Regularize: grafted embeddings should be "near" original + growth direction
         let expected_direction = &avg_grafted - &tree_embed;
-        let growth_magnitude = expected_direction.mapv(|x| x * x).sum().sqrt();
+        let growth_magnitude = expected_direction.mapv(|x: f32| x * x).sum().sqrt();
         
         // Penalty if growth is too small or too large
         let ideal_growth = (tree.size() as f32).sqrt();
@@ -290,7 +291,9 @@ mod tests {
     #[test]
     fn test_hopf_invariant_loss() {
         let t1 = Tree::new();
-        let t2 = TreeBuilder::new().add_child(0, 1).build().unwrap();
+        let mut builder = TreeBuilder::new();
+        builder.add_child(0, 1);
+        let t2 = builder.build().unwrap();
         
         // Simple embedding function for testing
         let embed_fn = |tree: &Tree| -> Array1<f32> {

@@ -257,12 +257,12 @@ impl TreeEnvironment {
         score += (cuts.len() as f32).ln();
         
         // Antipode complexity
-        let antipode = self.hopf.antipode(tree);
+        let antipode = self.hopf.tree_antipode(tree);
         score += (antipode.size() as f32) / (tree.size() as f32);
         
         // Coproduct richness
-        let coproduct = self.hopf.coproduct(tree);
-        score += coproduct.terms().count() as f32 * 0.1;
+        let coproduct = self.hopf.tree_coproduct(tree);
+        score += coproduct.len() as f32 * 0.1;
         
         score
     }

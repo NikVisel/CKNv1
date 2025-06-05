@@ -1,6 +1,6 @@
 //! Coproduct operation on rooted trees
 
-use super::{Tree, TreeBuilder, Forest};
+use super::{Tree, Forest};
 use std::collections::{HashSet, HashMap};
 use rayon::prelude::*;
 
@@ -35,7 +35,6 @@ impl CoProduct for Tree {
         }
         
         let n_edges = edges.len();
-        let mut result = Vec::new();
         
         // For large trees, parallelize the search
         let use_parallel = n_edges > 8;
@@ -65,7 +64,7 @@ impl CoProduct for Tree {
         
         // All proper admissible cuts
         for cut in self.admissible_cuts() {
-            if !cut.pruned_forest.is_empty() && cut.trunk.size() > 1 {
+            if !cut.pruned_forest.is_empty() {
                 result.insert((cut.pruned_forest, cut.trunk), 1);
             }
         }
@@ -201,13 +200,14 @@ impl Tree {
             }
         }
         
-        Tree { n_nodes, children }
+        Tree::from_adjacency(children).expect("invalid adjacency")
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::algebra::TreeBuilder;
 
     #[test]
     fn test_coproduct_single_node() {
@@ -220,10 +220,9 @@ mod tests {
 
     #[test]
     fn test_coproduct_two_nodes() {
-        let t = TreeBuilder::new()
-            .add_child(0, 1)
-            .build()
-            .unwrap();
+        let mut builder = TreeBuilder::new();
+        builder.add_child(0, 1);
+        let t = builder.build().unwrap();
         
         let cop = t.coproduct();
         

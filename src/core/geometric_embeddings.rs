@@ -272,11 +272,10 @@ mod tests {
 
     #[test]
     fn test_cga_embedding() {
-        let tree = TreeBuilder::new()
-            .add_child(0, 1)
-            .add_child(1, 2)
-            .build()
-            .unwrap();
+        let mut builder = TreeBuilder::new();
+        builder.add_child(0, 1)
+            .add_child(1, 2);
+        let tree = builder.build().unwrap();
         
         let cga = CGA::new(3);
         let embedding = cga.embed(&tree);
@@ -286,7 +285,9 @@ mod tests {
 
     #[test]
     fn test_hyperbolic_embedding() {
-        let tree = TreeBuilder::new().add_child(0, 1).build().unwrap();
+        let mut builder = TreeBuilder::new();
+        builder.add_child(0, 1);
+        let tree = builder.build().unwrap();
         
         let hyp = HyperbolicEmbedding::new(3, -1.0);
         let embedding = hyp.embed(&tree);

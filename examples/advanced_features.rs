@@ -3,9 +3,12 @@
 use hopf_ml::algebra::{Tree, TreeBuilder};
 use hopf_ml::applications::{
     DualStreamTransformer, AttentionMechanism, AlgebraStream, GeometryStream,
+    DualStreamConfig,
     HopfChain, HopfContract, HopfOperation, AlgebraicTransaction, AlgebraicObject,
-    QuantumTreeState, HopfGate, HopfQuantumCircuit, HopfVQE, SizeObservable,
+    QuantumTreeState, HopfGate, HopfQuantumCircuit, HopfVQE, TreeObservable,
+    ComputationProof,
 };
+use hopf_ml::{Antipode, CoProduct};
 use hopf_ml::core::{
     HopfInvariantLoss, AlgebraicConstraints, HopfFlow, GeometricHopfFlow,
     HyperbolicEmbedding, SphericalEmbedding, CGA, GeometricEmbedding,
@@ -18,9 +21,24 @@ fn main() {
     // Create some test trees
     let trees = vec![
         TreeBuilder::new().build().unwrap(),
-        TreeBuilder::new().add_child(0, 1).build().unwrap(),
-        TreeBuilder::new().add_child(0, 1).add_child(0, 2).build().unwrap(),
-        TreeBuilder::new().add_child(0, 1).add_child(1, 2).add_child(1, 3).build().unwrap(),
+        {
+            let mut b = TreeBuilder::new();
+            b.add_child(0, 1);
+            b.build().unwrap()
+        },
+        {
+            let mut b = TreeBuilder::new();
+            b.add_child(0, 1);
+            b.add_child(0, 2);
+            b.build().unwrap()
+        },
+        {
+            let mut b = TreeBuilder::new();
+            b.add_child(0, 1);
+            b.add_child(1, 2);
+            b.add_child(1, 3);
+            b.build().unwrap()
+        },
     ];
 
     // 1. Hopf-Invariant Loss Functions
@@ -83,12 +101,13 @@ fn demo_dual_stream_transformer(trees: &[Tree]) {
     let n_heads = 4;
 
     // Create transformer
-    let transformer = DualStreamTransformer::new(
+    let cfg = DualStreamConfig {
         embed_dim,
         n_heads,
-        AttentionMechanism::AlgebraWeighted,
-        AttentionMechanism::Hyperbolic,
-    );
+        algebra_attention: AttentionMechanism::AlgebraWeighted,
+        geometry_attention: AttentionMechanism::Hyperbolic,
+    };
+    let transformer = DualStreamTransformer::new(cfg);
 
     // Create algebra and geometry embeddings
     let algebra_stream = AlgebraStream::new(embed_dim);
@@ -158,7 +177,12 @@ fn demo_geometric_embeddings(tree: &Tree) {
         cga_multivector.grade, cga_multivector.coefficients.len());
 
     // Test interpolation
-    let tree2 = TreeBuilder::new().add_child(0, 1).add_child(0, 2).build().unwrap();
+    let tree2 = {
+        let mut b = TreeBuilder::new();
+        b.add_child(0, 1);
+        b.add_child(0, 2);
+        b.build().unwrap()
+    };
     let hyp_embed2 = hyp.embed(&tree2);
     let interpolated = hyp.interpolate(&hyp_embed, &hyp_embed2, 0.5);
     let interp_norm = interpolated.mapv(|x| x * x).sum().sqrt();
@@ -172,26 +196,26 @@ fn demo_blockchain(trees: &[Tree]) {
 
     // Add transactions
     for (i, tree) in trees.iter().take(2).enumerate() {
-        let tx = AlgebraicTransaction {
-            id: format!("tx_{}", i),
-            operation: HopfOperation::Antipode,
-            input: AlgebraicObject::Tree(tree.clone()),
-            output: AlgebraicObject::Forest(tree.antipode()),
-            proof: hopf_ml::applications::blockchain::ComputationProof {
-                computation_hash: "proof_hash".to_string(),
-                witness: vec![],
-                verification_key: "verifier".to_string(),
-            },
-            timestamp: i as u64,
-        };
+        let proof = ComputationProof::new(
+            "proof_hash".to_string(),
+            vec![],
+            "verifier".to_string(),
+        );
+        let tx = AlgebraicTransaction::new(
+            format!("tx_{}", i),
+            HopfOperation::Antipode,
+            AlgebraicObject::Tree(tree.clone()),
+            AlgebraicObject::Forest(tree.antipode()),
+            proof,
+            i as u64,
+        );
 
         chain.add_transaction(tx).unwrap();
     }
 
     // Mine block
     let block = chain.mine_block("miner_address");
-    println!("  Mined block #{} with {} transactions", block.index, block.transactions.len());
-    println!("  Block hash: {}", &block.hash[..16]); // First 16 chars
+    println!("  Mined block: {:?}", block);
 
     // Validate chain
     println!("  Chain valid: {}", chain.is_valid_chain());
@@ -243,7 +267,7 @@ fn demo_quantum(trees: &[Tree]) {
 }
 
 // Implement required trait for the example
-impl hopf_ml::applications::quantum::TreeObservable for SizeObservable {
+impl TreeObservable for SizeObservable {
     fn eigenvalue(&self, tree: &Tree) -> f64 {
         tree.size() as f64
     }
