@@ -60,9 +60,29 @@ These examples demonstrate how the core algebra and learning components can be r
    - Continuous integration to build and test the project (`cargo check`, `cargo test` workflows).
    - Optional containerization for deployment, with GPU support when available.
 
-## 5. Next Steps
+## 5. HopfFormer Architecture
 
-The repository currently does not compile due to unresolved imports and unimplemented methods. Focusing on the algebra folder and core modules will provide the most impact. Once the build is stable we can:
+Version 0.1.0 introduces **HopfFormer**, a multi-layer transformer that stacks
+the existing dual-stream blocks. Each layer runs algebraic and geometric
+attention in parallel and mixes the streams with cross-attention. HopfFormer
+exposes a simple `HopfFormerConfig` for choosing the embedding dimension,
+number of layers and attention heads. The model interfaces with
+`HopfInvariantLoss` to enforce algebraic consistency during training.
+
+```
+trees ──> AlgebraStream ──┐
+                          │                 ┌─> layer 1
+trees ──> GeometryStream ─┼─> HopfFormer ───┼─> layer 2
+                          │                 └─> ...
+                          ▼
+                Combined embeddings
+```
+
+HopfFormer serves as the recommended baseline going forward.
+
+## 6. Next Steps
+
+The project now compiles and all unit tests pass. Remaining work focuses on polishing the API and expanding documentation:
 
 - Finalize the dual-stream transformer API and training loops.
 - Provide preconfigured datasets and example experiments in `examples/`.
