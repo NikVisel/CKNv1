@@ -1,6 +1,6 @@
 //! Coproduct operation on rooted trees
 
-use super::{Tree, TreeBuilder, Forest};
+use super::{Tree, Forest};
 use std::collections::{HashSet, HashMap};
 use rayon::prelude::*;
 
@@ -35,7 +35,6 @@ impl CoProduct for Tree {
         }
         
         let n_edges = edges.len();
-        let mut result = Vec::new();
         
         // For large trees, parallelize the search
         let use_parallel = n_edges > 8;
@@ -201,7 +200,7 @@ impl Tree {
             }
         }
         
-        Tree { n_nodes, children }
+        Tree::from_adjacency(children).expect("invalid adjacency")
     }
 }
 

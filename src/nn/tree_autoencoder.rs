@@ -114,7 +114,7 @@ impl GraftedTreeAutoencoder {
             // Hopf-algebraic features
             if self.config.hopf_constrained {
                 let subtree = self.extract_subtree(tree, node);
-                let antipode = self.hopf.antipode(&subtree);
+                let antipode = self.hopf.tree_antipode(&subtree);
                 features[(node, 4)] = antipode.size() as f32;
                 features[(node, 5)] = antipode.max_depth() as f32;
                 
@@ -162,8 +162,14 @@ impl GraftedTreeAutoencoder {
         
         if !branching_factors.is_empty() {
             encoding[15] = branching_factors.iter().sum::<f32>() / branching_factors.len() as f32;
-            encoding[16] = branching_factors.iter().max().copied().unwrap_or(0.0);
-            encoding[17] = branching_factors.iter().min().copied().unwrap_or(0.0);
+            encoding[16] = branching_factors
+                .iter()
+                .cloned()
+                .fold(f32::MIN, f32::max);
+            encoding[17] = branching_factors
+                .iter()
+                .cloned()
+                .fold(f32::MAX, f32::min);
         }
         
         encoding

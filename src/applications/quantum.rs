@@ -73,10 +73,10 @@ impl QuantumTreeState {
         for (i, tree) in self.basis.iter().enumerate() {
             let cop = tree.coproduct();
             let amp = self.amplitudes[i];
-            
+
             // Create superposition of coproduct terms
             let n_terms = cop.len() as f64;
-            for (_forest, trunk) in cop {
+            for ((_, trunk), _) in cop {
                 // Use the trunk as the new basis state
                 new_basis.push(trunk);
                 new_amplitudes.push(amp / n_terms.sqrt());
@@ -146,7 +146,7 @@ impl QuantumTreeState {
     }
 
     /// Get expectation value of an observable
-    pub fn expectation_value(&self, observable: &TreeObservable) -> f64 {
+    pub fn expectation_value(&self, observable: &dyn TreeObservable) -> f64 {
         let mut expectation = 0.0;
         
         for (i, tree) in self.basis.iter().enumerate() {

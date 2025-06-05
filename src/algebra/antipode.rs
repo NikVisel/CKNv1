@@ -82,7 +82,11 @@ impl Antipode for Forest {
             .into_iter()
             .flat_map(|(f, coeff)| {
                 let abs_coeff = coeff.abs() as usize;
-                (0..abs_coeff).flat_map(move |_| f.trees().iter().cloned())
+                let mut trees = Vec::new();
+                for _ in 0..abs_coeff {
+                    trees.extend(f.trees().iter().cloned());
+                }
+                trees
             })
             .collect()
     }

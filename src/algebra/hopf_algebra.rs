@@ -4,12 +4,26 @@ use super::{Tree, Forest, CoProduct, Antipode, delta_k};
 use std::collections::HashMap;
 use num_rational::Rational64;
 use serde::{Serialize, Deserialize};
+use crate::HopfMLError;
+use std::hash::{Hash, Hasher};
 
 /// A general element in the Hopf algebra as a linear combination of forests
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct HopfElement {
     /// Coefficients for each forest
     terms: HashMap<Forest, Rational64>,
+}
+
+
+impl Hash for HopfElement {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        let mut terms: Vec<_> = self.terms.iter().collect();
+        terms.sort_by(|a, b| a.0.cmp(b.0));
+        for (forest, coeff) in terms {
+            forest.hash(state);
+            coeff.hash(state);
+        }
+    }
 }
 
 impl HopfElement {
@@ -23,21 +37,21 @@ impl HopfElement {
     /// Create a unit element (empty forest with coefficient 1)
     pub fn one() -> Self {
         let mut terms = HashMap::new();
-        terms.insert(Forest::empty(), Rational64::from(1));
+        terms.insert(Forest::empty(), Rational64::from_integer(1));
         HopfElement { terms }
     }
 
     /// Create from a single tree
     pub fn from_tree(tree: Tree) -> Self {
         let mut terms = HashMap::new();
-        terms.insert(Forest::single(tree), Rational64::from(1));
+        terms.insert(Forest::single(tree), Rational64::from_integer(1));
         HopfElement { terms }
     }
 
     /// Create from a forest
     pub fn from_forest(forest: Forest) -> Self {
         let mut terms = HashMap::new();
-        terms.insert(forest, Rational64::from(1));
+        terms.insert(forest, Rational64::from_integer(1));
         HopfElement { terms }
     }
 
@@ -46,11 +60,11 @@ impl HopfElement {
         let mut terms = self.terms.clone();
         
         for (forest, coeff) in &other.terms {
-            *terms.entry(forest.clone()).or_insert(Rational64::from(0)) += coeff;
+            *terms.entry(forest.clone()).or_insert(Rational64::from_integer(0)) += coeff;
         }
         
         // Remove zero terms
-        terms.retain(|_, coeff| *coeff != Rational64::from(0));
+        terms.retain(|_, coeff| *coeff != Rational64::from_integer(0));
         
         HopfElement { terms }
     }
@@ -61,7 +75,7 @@ impl HopfElement {
         
         for (forest, coeff) in &self.terms {
             let new_coeff = coeff * scalar;
-            if new_coeff != Rational64::from(0) {
+            if new_coeff != Rational64::from_integer(0) {
                 terms.insert(forest.clone(), new_coeff);
             }
         }
@@ -77,17 +91,17 @@ impl HopfElement {
             for (f2, c2) in &other.terms {
                 let combined = f1.multiply(f2);
                 let coeff = c1 * c2;
-                *terms.entry(combined).or_insert(Rational64::from(0)) += coeff;
+                *terms.entry(combined).or_insert(Rational64::from_integer(0)) += coeff;
             }
         }
         
-        terms.retain(|_, coeff| *coeff != Rational64::from(0));
+        terms.retain(|_, coeff| *coeff != Rational64::from_integer(0));
         HopfElement { terms }
     }
 
     /// Get coefficient of a forest
     pub fn coefficient(&self, forest: &Forest) -> Rational64 {
-        self.terms.get(forest).cloned().unwrap_or(Rational64::from(0))
+        self.terms.get(forest).cloned().unwrap_or(Rational64::from_integer(0))
     }
 
     /// Check if element is zero
@@ -105,6 +119,12 @@ impl HopfElement {
 pub struct HopfAlgebra;
 
 impl HopfAlgebra {
+    /// Create a new Hopf algebra instance. The argument is unused but kept for
+    /// API compatibility.
+    pub fn new(_max_tree_size: usize) -> Self {
+        HopfAlgebra
+    }
+
     /// Compute coproduct of a Hopf element
     pub fn coproduct(element: &HopfElement) -> HashMap<(HopfElement, HopfElement), Rational64> {
         let mut result = HashMap::new();
@@ -134,8 +154,8 @@ impl HopfAlgebra {
             for ((left, right), c) in forest_cop {
                 let left_elem = HopfElement::from_forest(left);
                 let right_elem = HopfElement::from_forest(right);
-                *result.entry((left_elem, right_elem)).or_insert(Rational64::from(0)) 
-                    += Rational64::from(c) * coeff;
+                *result.entry((left_elem, right_elem)).or_insert(Rational64::from_integer(0))
+                    += Rational64::from_integer(c as i64) * coeff;
             }
         }
         
@@ -162,7 +182,7 @@ impl HopfAlgebra {
         
         for tree in trees {
             let forest = Forest::single(tree);
-            *terms.entry(forest).or_insert(Rational64::from(0)) += 1;
+            *terms.entry(forest).or_insert(Rational64::from_integer(0)) += Rational64::from_integer(1);
         }
         
         HopfElement { terms }
@@ -178,7 +198,7 @@ impl HopfAlgebra {
             let right = HopfElement::from_tree(tree);
             let s_right = Self::antipode(&right);
             
-            let term = left.multiply(&s_right).scale(Rational64::from(coeff));
+            let term = left.multiply(&s_right).scale(Rational64::from_integer(coeff as i64));
             sum = sum.add(&term);
         }
         
@@ -190,6 +210,45 @@ impl HopfAlgebra {
         };
         
         sum == expected
+    }
+
+    /// Compute the antipode of a tree using the `Antipode` trait
+    pub fn tree_antipode(&self, tree: &Tree) -> Forest {
+        tree.antipode()
+    }
+
+    /// Compute the coproduct of a tree using the `CoProduct` trait
+    pub fn tree_coproduct(&self, tree: &Tree) -> HashMap<(Forest, Tree), i32> {
+        tree.coproduct()
+    }
+
+    /// List admissible cuts as lists of cut child nodes
+    pub fn admissible_cuts(&self, tree: &Tree) -> Vec<Vec<usize>> {
+        tree
+            .admissible_cuts()
+            .into_iter()
+            .map(|c| {
+                let mut nodes: Vec<usize> = c.cut_edges.into_iter().map(|(_, ch)| ch).collect();
+                nodes.sort_unstable();
+                nodes
+            })
+            .collect()
+    }
+
+    /// Apply a cut specified by child nodes and return the pruned forest and trunk
+    pub fn apply_cut(&self, tree: &Tree, cut: &[usize]) -> crate::Result<(Forest, Tree)> {
+        let mut target = cut.to_vec();
+        target.sort_unstable();
+
+        for c in tree.admissible_cuts() {
+            let mut nodes: Vec<usize> = c.cut_edges.iter().map(|&(_, ch)| ch).collect();
+            nodes.sort_unstable();
+            if nodes == target {
+                return Ok((c.pruned_forest, c.trunk));
+            }
+        }
+
+        Err(HopfMLError::AlgebraError("Invalid cut".to_string()))
     }
 }
 
@@ -204,7 +263,7 @@ mod tests {
         let h2 = HopfElement::from_tree(t1);
         
         let sum = h1.add(&h2);
-        assert_eq!(sum.coefficient(&Forest::single(Tree::new())), Rational64::from(2));
+        assert_eq!(sum.coefficient(&Forest::single(Tree::new())), Rational64::from_integer(2));
     }
 
     #[test]

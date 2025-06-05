@@ -2,6 +2,7 @@
 
 use crate::algebra::{Tree, Forest, HopfAlgebra, CoProduct, Antipode};
 use ndarray::{Array1, Array2};
+use num_traits::Zero;
 use std::collections::HashMap;
 
 /// Algebraic constraints for embeddings to respect Hopf structure
@@ -80,7 +81,7 @@ impl HopfInvariantLoss {
         let antipode = tree.antipode();
         
         // For a forest, we sum embeddings of its trees
-        let mut embed_st = Array1::zeros(embed_t.len());
+        let mut embed_st = Array1::<f32>::zeros(embed_t.len());
         for tree in antipode.trees() {
             let tree_embed = self.get_or_compute_embedding(tree, &embed_fn);
             embed_st = embed_st + tree_embed;
@@ -88,7 +89,7 @@ impl HopfInvariantLoss {
         
         // Loss: φ(S(t)) + φ(t) ≈ 0
         let sum = &embed_st + &embed_t;
-        sum.mapv(|x| x * x).sum() / sum.len() as f32
+        sum.mapv(|x: f32| x * x).sum() / sum.len() as f32
     }
 
     /// Compute coproduct consistency loss using contrastive learning
@@ -274,7 +275,7 @@ impl HopfRegularizer {
         
         // Regularize: grafted embeddings should be "near" original + growth direction
         let expected_direction = &avg_grafted - &tree_embed;
-        let growth_magnitude = expected_direction.mapv(|x| x * x).sum().sqrt();
+        let growth_magnitude = expected_direction.mapv(|x: f32| x * x).sum().sqrt();
         
         // Penalty if growth is too small or too large
         let ideal_growth = (tree.size() as f32).sqrt();

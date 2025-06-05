@@ -368,7 +368,7 @@ impl HopfContract {
                 let cop = input.coproduct();
                 // Collect all forests from coproduct terms
                 let all_trees: Vec<Tree> = cop.into_iter()
-                    .flat_map(|(forest, _trunk)| forest.into_trees())
+                    .flat_map(|((forest, _trunk), _coeff)| forest.into_trees())
                     .collect();
                 AlgebraicObject::Forest(Forest::from(all_trees))
             }
