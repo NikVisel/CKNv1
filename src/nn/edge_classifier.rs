@@ -271,12 +271,11 @@ mod tests {
     
     #[test]
     fn test_edge_features() {
-        let tree = TreeBuilder::new()
-            .add_child(0, 1)
+        let mut builder = TreeBuilder::new();
+        builder.add_child(0, 1)
             .add_child(0, 2)
-            .add_child(1, 3)
-            .build()
-            .unwrap();
+            .add_child(1, 3);
+        let tree = builder.build().unwrap();
             
         let classifier = EdgeClassifier::new(ClassificationMode::AdmissibleCuts);
         let features = classifier.extract_edge_features(&tree);
@@ -287,11 +286,10 @@ mod tests {
     
     #[test]
     fn test_edge_labeling() {
-        let tree = TreeBuilder::new()
-            .add_child(0, 1)
-            .add_child(0, 2)
-            .build()
-            .unwrap();
+        let mut builder = TreeBuilder::new();
+        builder.add_child(0, 1)
+            .add_child(0, 2);
+        let tree = builder.build().unwrap();
             
         let classifier = EdgeClassifier::new(ClassificationMode::AdmissibleCuts);
         let cuts = vec![vec![1], vec![2], vec![1, 2]];

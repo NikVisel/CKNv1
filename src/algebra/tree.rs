@@ -1,6 +1,6 @@
 //! Rooted tree data structure and operations
 
-use std::collections::{BTreeMap, BTreeSet, VecDeque};
+use std::collections::VecDeque;
 use std::fmt;
 use serde::{Serialize, Deserialize};
 

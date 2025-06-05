@@ -251,6 +251,25 @@ impl GeometricHopfFlow {
     }
 }
 
+impl crate::core::geometric_embeddings::GeometricEmbedding for GeometricHopfFlow {
+    fn embed(&self, tree: &Tree) -> Array1<f32> {
+        let mut v = Array1::zeros(self.manifold_dim);
+        v[0] = tree.size() as f32;
+        if self.manifold_dim > 1 {
+            v[1] = tree.max_depth() as f32;
+        }
+        v
+    }
+
+    fn distance(&self, a: &Array1<f32>, b: &Array1<f32>) -> f32 {
+        (a - b).mapv(|x| x * x).sum().sqrt()
+    }
+
+    fn interpolate(&self, a: &Array1<f32>, b: &Array1<f32>, t: f32) -> Array1<f32> {
+        a * (1.0 - t) + b * t
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -267,11 +286,10 @@ mod tests {
 
     #[test]
     fn test_hopf_flow() {
-        let tree = TreeBuilder::new()
-            .add_child(0, 1)
-            .add_child(0, 2)
-            .build()
-            .unwrap();
+        let mut builder = TreeBuilder::new();
+        builder.add_child(0, 1)
+            .add_child(0, 2);
+        let tree = builder.build().unwrap();
         
         let flow = HopfFlow::new(20);
         let result = flow.coproduct_flow(&tree, 10);
@@ -288,6 +306,6 @@ mod tests {
         let velocity = Array1::ones(10);
         
         let end = flow.geodesic_flow(start.clone(), velocity, 1.0);
-        assert_eq!(end, Array1::ones(10));
+        assert_eq!(end, Array1::from_elem(10, 1.0));
     }
 } 

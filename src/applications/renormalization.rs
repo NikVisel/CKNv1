@@ -24,11 +24,11 @@ impl RenormalizationSimulator {
 
     /// Compute "divergence degree" of a tree (toy model)
     pub fn divergence_degree(&self, tree: &Tree) -> i32 {
-        // Toy model: degree = 2 * loops - 4
-        // For trees: loops = edges - nodes + 1 = 0
-        // So we use: degree = size - 2 * height
+        // Toy model: degree roughly grows with size and decreases with height
+        // Single-node trees should be non-divergent, two-node trees marginal,
+        // and larger trees divergent.
         let height = self.compute_height(tree);
-        tree.size() as i32 - 2 * height as i32
+        tree.size() as i32 - height as i32 - 1
     }
 
     fn compute_height(&self, tree: &Tree) -> usize {
@@ -185,22 +185,20 @@ mod tests {
         let tree = Tree::new();
         assert!(sim.divergence_degree(&tree) <= 0);
         
-        let tree2 = TreeBuilder::new()
-            .add_child(0, 1)
-            .build()
-            .unwrap();
+        let mut builder = TreeBuilder::new();
+        builder.add_child(0, 1);
+        let tree2 = builder.build().unwrap();
         let div2 = sim.divergence_degree(&tree2);
         assert_eq!(div2, 0); // 2 nodes, height 1: 2 - 2*1 = 0
     }
 
     #[test]
     fn test_renormalization() {
-        let tree = TreeBuilder::new()
-            .add_child(0, 1)
+        let mut builder = TreeBuilder::new();
+        builder.add_child(0, 1)
             .add_child(0, 2)
-            .add_child(1, 3)
-            .build()
-            .unwrap();
+            .add_child(1, 3);
+        let tree = builder.build().unwrap();
 
         let sim = RenormalizationSimulator::new(0.1, 1.0);
         let bare = sim.bare_value(&tree);

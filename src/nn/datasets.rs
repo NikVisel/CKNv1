@@ -4,6 +4,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use ndarray::{Array1, Array2};
 use num_rational::Rational64;
+use num_traits::identities::Zero;
 use crate::algebra::{Tree, Forest, HopfAlgebra};
 use crate::graph::{tree_to_graph, GraphData};
 
@@ -59,7 +60,7 @@ impl AdmissibleCutsDataset {
         
         let samples = trees.into_iter()
             .map(|tree| {
-                let cuts = hopf.admissible_cuts(&tree);
+              let cuts = hopf.admissible_cuts(&tree);
                 (tree, cuts)
             })
             .collect();
@@ -93,7 +94,7 @@ impl AdmissibleCutsDataset {
 /// Dataset for learning antipode values
 pub struct AntipodeDataset {
     /// (input_tree, antipode_tree) pairs
-    samples: Vec<(Tree, Tree)>,
+    samples: Vec<(Tree, Forest)>,
 }
 
 impl AntipodeDataset {
@@ -104,7 +105,7 @@ impl AntipodeDataset {
         
         let samples = trees.into_iter()
             .map(|tree| {
-                let antipode = hopf.antipode(&tree);
+                let antipode = hopf.tree_antipode(&tree);
                 (tree, antipode)
             })
             .collect();
@@ -123,7 +124,7 @@ impl AntipodeDataset {
     }
     
     /// Get a sample
-    pub fn get(&self, idx: usize) -> Option<&(Tree, Tree)> {
+    pub fn get(&self, idx: usize) -> Option<&(Tree, Forest)> {
         self.samples.get(idx)
     }
 }
@@ -194,8 +195,12 @@ impl CoefficientDataset {
                 let (left, right) = hopf.apply_cut(&tree, &cut)?;
                 
                 // Get coefficient from coproduct
-                let coproduct = hopf.coproduct(&tree);
-                let coeff = coproduct.coefficient(&left, &right).unwrap_or(Rational64::zero());
+                let coproduct = hopf.tree_coproduct(&tree);
+                let coeff = coproduct
+                    .get(&(left.clone(), right.clone()))
+                    .cloned()
+                    .map(|c| Rational64::from_integer(c as i64))
+                    .unwrap_or_else(Rational64::zero);
                 
                 // Store exact rational coefficient
                 let key = (format!("{:?}", left), format!("{:?}", right));

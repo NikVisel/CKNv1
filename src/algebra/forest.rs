@@ -23,6 +23,11 @@ impl Forest {
         Forest { trees }
     }
 
+    /// Alias for `from` kept for backward compatibility
+    pub fn from_trees(trees: Vec<Tree>) -> Self {
+        Self::from(trees)
+    }
+
     /// Create a forest with a single tree
     pub fn single(tree: Tree) -> Self {
         Forest { trees: vec![tree] }
@@ -48,6 +53,20 @@ impl Forest {
         self.trees.iter().map(|t| t.size()).sum()
     }
 
+    /// Total number of nodes, for API symmetry with `Tree::size`
+    pub fn size(&self) -> usize {
+        self.total_nodes()
+    }
+
+    /// Maximum depth among all trees in the forest
+    pub fn max_depth(&self) -> usize {
+        self.trees
+            .iter()
+            .map(|t| t.max_depth())
+            .max()
+            .unwrap_or(0)
+    }
+
     /// Multiply two forests (concatenate and sort)
     pub fn multiply(&self, other: &Forest) -> Forest {
         let mut trees = self.trees.clone();
@@ -62,6 +81,11 @@ impl Forest {
         F: Fn(&Tree) -> R,
     {
         self.trees.iter().map(f).collect()
+    }
+
+    /// Consume the forest and return its trees
+    pub fn into_trees(self) -> Vec<Tree> {
+        self.trees
     }
 
     /// Create iterator over trees

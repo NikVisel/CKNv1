@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 use ndarray::{Array1, Array2, Array3};
-use crate::algebra::{Tree, Forest, HopfAlgebra};
+use crate::algebra::{Tree, Forest, HopfAlgebra, TreeBuilder};
 use crate::graph::{GraphData, tree_to_graph};
 
 /// Configuration for tree autoencoder
@@ -114,7 +114,7 @@ impl GraftedTreeAutoencoder {
             // Hopf-algebraic features
             if self.config.hopf_constrained {
                 let subtree = self.extract_subtree(tree, node);
-                let antipode = self.hopf.antipode(&subtree);
+                let antipode = self.hopf.tree_antipode(&subtree);
                 features[(node, 4)] = antipode.size() as f32;
                 features[(node, 5)] = antipode.max_depth() as f32;
                 
@@ -162,8 +162,14 @@ impl GraftedTreeAutoencoder {
         
         if !branching_factors.is_empty() {
             encoding[15] = branching_factors.iter().sum::<f32>() / branching_factors.len() as f32;
-            encoding[16] = branching_factors.iter().max().copied().unwrap_or(0.0);
-            encoding[17] = branching_factors.iter().min().copied().unwrap_or(0.0);
+            encoding[16] = branching_factors
+                .iter()
+                .cloned()
+                .fold(f32::MIN, f32::max);
+            encoding[17] = branching_factors
+                .iter()
+                .cloned()
+                .fold(f32::MAX, f32::min);
         }
         
         encoding
@@ -251,13 +257,30 @@ impl GraftedTreeAutoencoder {
     
     /// Extract subtree rooted at node
     fn extract_subtree(&self, tree: &Tree, root: usize) -> Tree {
-        // This is a simplified version - would need proper implementation
-        if root == 0 {
-            tree.clone()
-        } else {
-            // Create subtree with just the node
-            Tree::new()
+        use std::collections::VecDeque;
+        use std::collections::HashMap;
+
+        // Map original node indices to new ones
+        let mut map = HashMap::new();
+        map.insert(root, 0usize);
+
+        let mut adjacency: Vec<Vec<usize>> = vec![Vec::new()];
+        let mut queue = VecDeque::new();
+        queue.push_back(root);
+
+        while let Some(node) = queue.pop_front() {
+            let parent_new = map[&node];
+            for &child in tree.children(node) {
+                // Assign new index for child
+                let new_idx = adjacency.len();
+                adjacency.push(Vec::new());
+                adjacency[parent_new].push(new_idx);
+                map.insert(child, new_idx);
+                queue.push_back(child);
+            }
         }
+
+        Tree::from_adjacency(adjacency).unwrap_or_else(|_| Tree::new())
     }
     
     /// Generate tree from encoding
@@ -340,8 +363,25 @@ impl MaskedTreeReconstruction {
             }
         }
         
-        // Create masked tree (placeholder - would need proper implementation)
-        (tree.clone(), masked_nodes)
+        use std::collections::HashSet;
+
+        let mask_set: HashSet<usize> = masked_nodes.iter().cloned().collect();
+
+        // Build new adjacency excluding masked nodes and subtrees
+        let mut adjacency = vec![Vec::new(); tree.size()];
+        for parent in 0..tree.size() {
+            if mask_set.contains(&parent) {
+                continue;
+            }
+            for &child in tree.children(parent) {
+                if !mask_set.contains(&child) {
+                    adjacency[parent].push(child);
+                }
+            }
+        }
+
+        let masked_tree = Tree::from_adjacency(adjacency).unwrap_or_else(|_| tree.clone());
+        (masked_tree, masked_nodes)
     }
     
     /// Collect all nodes in a subtree
@@ -377,12 +417,11 @@ mod tests {
     
     #[test]
     fn test_autoencoder() {
-        let tree = TreeBuilder::new()
-            .add_child(0, 1)
+        let mut builder = TreeBuilder::new();
+        builder.add_child(0, 1)
             .add_child(0, 2)
-            .add_child(1, 3)
-            .build()
-            .unwrap();
+            .add_child(1, 3);
+        let tree = builder.build().unwrap();
             
         let hopf = Arc::new(HopfAlgebra::new(100));
         let config = AutoencoderConfig::default();
@@ -397,11 +436,10 @@ mod tests {
     
     #[test]
     fn test_masked_reconstruction() {
-        let tree = TreeBuilder::new()
-            .add_child(0, 1)
-            .add_child(0, 2)
-            .build()
-            .unwrap();
+        let mut builder = TreeBuilder::new();
+        builder.add_child(0, 1)
+            .add_child(0, 2);
+        let tree = builder.build().unwrap();
             
         let masker = MaskedTreeReconstruction::new(0.3, false);
         let (masked_tree, masked_nodes) = masker.mask_tree(&tree);

@@ -1,7 +1,7 @@
 //! Hopf-algebraic loss functions and regularizers
 
 use std::sync::Arc;
-use crate::algebra::{Tree, Forest, HopfAlgebra};
+use crate::algebra::{Tree, Forest, HopfAlgebra, Antipode};
 use crate::Result;
 use ndarray::{Array1, Array2};
 
@@ -71,22 +71,26 @@ impl HopfRegularizer {
         let mut involution_loss = 0.0;
         for (i, tree) in trees.iter().enumerate() {
             // Apply antipode twice
-            let s_tree = hopf.antipode(tree);
-            let s_s_tree = hopf.antipode(&s_tree);
-            
+            let s_tree = hopf.tree_antipode(tree);
+            let s_s_tree = s_tree.antipode();
+
             // Check if S(S(t)) = t
-            if tree != &s_s_tree {
+            if s_s_tree != Forest::single(tree.clone()) {
                 // Trees differ structurally - add penalty
                 involution_loss += 10.0;
             } else {
                 // Trees are the same, check embedding consistency
-                let s_emb = self.embed_tree(&s_tree, hopf.clone());
-                let s_s_emb = self.embed_tree(&s_s_tree, hopf.clone());
-                
+                let s_emb = self.embed_forest(&s_tree, hopf.clone());
+                let s_s_emb = self.embed_forest(&s_s_tree, hopf.clone());
+
                 // S(S(φ(t))) should equal φ(t)
                 let orig_emb = embeddings.row(i);
                 let diff = &s_s_emb - &orig_emb;
                 involution_loss += diff.dot(&diff) / self.embedding_dim as f32;
+
+                // Additionally enforce φ(S(t)) ≈ -φ(t)
+                let diff2 = &s_emb + &orig_emb;
+                involution_loss += diff2.dot(&diff2) / self.embedding_dim as f32;
             }
         }
         antipode_loss = involution_loss / trees.len() as f32;
@@ -129,8 +133,9 @@ impl HopfRegularizer {
         }
         
         // Normalize
-        let norm = result.dot(&result).sqrt();
-        if norm > 0.0 {
+        let mut norm: f32 = result.dot(&result);
+        norm = norm.sqrt();
+        if norm > 0.0f32 {
             result /= norm;
         }
         
@@ -140,12 +145,13 @@ impl HopfRegularizer {
     /// Check coassociativity property
     fn check_coassociativity(&self, tree: &Tree, hopf: Arc<HopfAlgebra>) -> f32 {
         // Compute Δ(t)
-        let delta_t = hopf.coproduct(tree);
+        let delta_t = hopf.tree_coproduct(tree);
         
         let mut error = 0.0;
         
         // For each term in Δ(t) = Σ t' ⊗ t''
-        for (forest1, forest2) in delta_t.terms() {
+        for ((forest1, trunk), _) in &delta_t {
+            let forest2 = &Forest::single(trunk.clone());
             // Compute (Δ ⊗ id)(t' ⊗ t'')
             let left_side = self.delta_tensor_id(forest1, forest2, hopf.clone());
             
@@ -170,10 +176,10 @@ impl HopfRegularizer {
         
         // Apply Δ to first component
         for tree in forest1.trees() {
-            let delta = hopf.coproduct(tree);
-            for (f1, f2) in delta.terms() {
-                // Result is f1 ⊗ f2 ⊗ forest2
-                result.push((f1.clone(), f2.clone(), forest2.clone()));
+            let delta = hopf.tree_coproduct(tree);
+            for ((f1, trunk), _) in delta {
+                // Result is f1 ⊗ trunk ⊗ forest2
+                result.push((f1, Forest::single(trunk), forest2.clone()));
             }
         }
         
@@ -191,10 +197,10 @@ impl HopfRegularizer {
         
         // Apply Δ to second component
         for tree in forest2.trees() {
-            let delta = hopf.coproduct(tree);
-            for (f1, f2) in delta.terms() {
-                // Result is forest1 ⊗ f1 ⊗ f2
-                result.push((forest1.clone(), f1.clone(), f2.clone()));
+            let delta = hopf.tree_coproduct(tree);
+            for ((f1, trunk), _) in delta {
+                // Result is forest1 ⊗ f1 ⊗ trunk
+                result.push((forest1.clone(), f1, Forest::single(trunk)));
             }
         }
         
