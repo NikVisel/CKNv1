@@ -11,6 +11,6 @@ mod molecular;
 pub use renormalization::RenormalizationSimulator;
 pub use graph_generation::HopfTreeGenerator;
 pub use algebraic_learning::AlgebraicLearner;
-pub use dual_stream::{DualStreamTransformer, AttentionMechanism, AlgebraStream, GeometryStream};
+pub use dual_stream::{DualStreamTransformer, AttentionMechanism, AlgebraStream, GeometryStream, DualStreamTrainer};
 pub use blockchain::{HopfChain, HopfContract, AlgebraicTransaction, HopfOperation, AlgebraicObject, ComputationProof, Block};
 pub use quantum::{QuantumTreeState, HopfGate, HopfQuantumCircuit, HopfVQE, TreeObservable}; 

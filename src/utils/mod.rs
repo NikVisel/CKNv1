@@ -196,7 +196,7 @@ mod tests {
         
         let tree3 = random_tree(5);
         let mut tree4 = random_tree(5);
-        while tree3 == tree4 {
+        while tree_hash(&tree3) == tree_hash(&tree4) {
             tree4 = random_tree(5);
         }
         assert_ne!(tree_hash(&tree3), tree_hash(&tree4));

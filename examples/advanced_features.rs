@@ -18,9 +18,24 @@ fn main() {
     // Create some test trees
     let trees = vec![
         TreeBuilder::new().build().unwrap(),
-        TreeBuilder::new().add_child(0, 1).build().unwrap(),
-        TreeBuilder::new().add_child(0, 1).add_child(0, 2).build().unwrap(),
-        TreeBuilder::new().add_child(0, 1).add_child(1, 2).add_child(1, 3).build().unwrap(),
+        {
+            let mut b = TreeBuilder::new();
+            b.add_child(0, 1);
+            b.build().unwrap()
+        },
+        {
+            let mut b = TreeBuilder::new();
+            b.add_child(0, 1);
+            b.add_child(0, 2);
+            b.build().unwrap()
+        },
+        {
+            let mut b = TreeBuilder::new();
+            b.add_child(0, 1);
+            b.add_child(1, 2);
+            b.add_child(1, 3);
+            b.build().unwrap()
+        },
     ];
 
     // 1. Hopf-Invariant Loss Functions
@@ -158,7 +173,12 @@ fn demo_geometric_embeddings(tree: &Tree) {
         cga_multivector.grade, cga_multivector.coefficients.len());
 
     // Test interpolation
-    let tree2 = TreeBuilder::new().add_child(0, 1).add_child(0, 2).build().unwrap();
+    let tree2 = {
+        let mut b = TreeBuilder::new();
+        b.add_child(0, 1);
+        b.add_child(0, 2);
+        b.build().unwrap()
+    };
     let hyp_embed2 = hyp.embed(&tree2);
     let interpolated = hyp.interpolate(&hyp_embed, &hyp_embed2, 0.5);
     let interp_norm = interpolated.mapv(|x| x * x).sum().sqrt();
@@ -190,8 +210,7 @@ fn demo_blockchain(trees: &[Tree]) {
 
     // Mine block
     let block = chain.mine_block("miner_address");
-    println!("  Mined block #{} with {} transactions", block.index, block.transactions.len());
-    println!("  Block hash: {}", &block.hash[..16]); // First 16 chars
+    println!("  Mined block: {:?}", block);
 
     // Validate chain
     println!("  Chain valid: {}", chain.is_valid_chain());
