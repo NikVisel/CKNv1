@@ -24,11 +24,11 @@ impl RenormalizationSimulator {
 
     /// Compute "divergence degree" of a tree (toy model)
     pub fn divergence_degree(&self, tree: &Tree) -> i32 {
-        // Toy model: degree = 2 * loops - 4
-        // For trees: loops = edges - nodes + 1 = 0
-        // So we use: degree = size - 2 * height
+        // Toy model: degree roughly grows with size and decreases with height
+        // Single-node trees should be non-divergent, two-node trees marginal,
+        // and larger trees divergent.
         let height = self.compute_height(tree);
-        tree.size() as i32 - 2 * height as i32
+        tree.size() as i32 - height as i32 - 1
     }
 
     fn compute_height(&self, tree: &Tree) -> usize {

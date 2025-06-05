@@ -64,7 +64,7 @@ impl CoProduct for Tree {
         
         // All proper admissible cuts
         for cut in self.admissible_cuts() {
-            if !cut.pruned_forest.is_empty() && cut.trunk.size() > 1 {
+            if !cut.pruned_forest.is_empty() {
                 result.insert((cut.pruned_forest, cut.trunk), 1);
             }
         }
