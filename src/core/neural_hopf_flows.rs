@@ -267,11 +267,10 @@ mod tests {
 
     #[test]
     fn test_hopf_flow() {
-        let tree = TreeBuilder::new()
-            .add_child(0, 1)
-            .add_child(0, 2)
-            .build()
-            .unwrap();
+        let mut builder = TreeBuilder::new();
+        builder.add_child(0, 1)
+            .add_child(0, 2);
+        let tree = builder.build().unwrap();
         
         let flow = HopfFlow::new(20);
         let result = flow.coproduct_flow(&tree, 10);
@@ -288,6 +287,6 @@ mod tests {
         let velocity = Array1::ones(10);
         
         let end = flow.geodesic_flow(start.clone(), velocity, 1.0);
-        assert_eq!(end, Array1::ones(10));
+        assert_eq!(end, Array1::from_elem(10, 1.0));
     }
 } 

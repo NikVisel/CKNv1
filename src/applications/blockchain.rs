@@ -412,7 +412,9 @@ mod tests {
     #[test]
     fn test_add_transaction() {
         let mut chain = HopfChain::new(2);
-        let tree = TreeBuilder::new().add_child(0, 1).build().unwrap();
+        let mut builder = TreeBuilder::new();
+        builder.add_child(0, 1);
+        let tree = builder.build().unwrap();
         
         let tx = AlgebraicTransaction {
             id: "test_tx".to_string(),
@@ -433,7 +435,9 @@ mod tests {
     #[test]
     fn test_smart_contract() {
         let mut contract = HopfContract::new();
-        let tree = TreeBuilder::new().add_child(0, 1).build().unwrap();
+        let mut builder = TreeBuilder::new();
+        builder.add_child(0, 1);
+        let tree = builder.build().unwrap();
         
         let result = contract.execute(HopfOperation::Antipode, tree);
         assert!(result.is_ok());

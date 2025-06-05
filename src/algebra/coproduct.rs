@@ -207,6 +207,7 @@ impl Tree {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::algebra::TreeBuilder;
 
     #[test]
     fn test_coproduct_single_node() {
@@ -219,10 +220,9 @@ mod tests {
 
     #[test]
     fn test_coproduct_two_nodes() {
-        let t = TreeBuilder::new()
-            .add_child(0, 1)
-            .build()
-            .unwrap();
+        let mut builder = TreeBuilder::new();
+        builder.add_child(0, 1);
+        let t = builder.build().unwrap();
         
         let cop = t.coproduct();
         

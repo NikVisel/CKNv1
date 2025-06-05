@@ -376,7 +376,9 @@ mod tests {
     #[test]
     fn test_quantum_state() {
         let tree1 = TreeBuilder::new().build().unwrap();
-        let tree2 = TreeBuilder::new().add_child(0, 1).build().unwrap();
+        let mut builder = TreeBuilder::new();
+        builder.add_child(0, 1);
+        let tree2 = builder.build().unwrap();
         
         let mut state = QuantumTreeState::new(vec![tree1, tree2]);
         state.apply_hopf_gate(&HopfGate::Hadamard);
@@ -387,7 +389,9 @@ mod tests {
 
     #[test]
     fn test_quantum_circuit() {
-        let tree = TreeBuilder::new().add_child(0, 1).build().unwrap();
+        let mut builder = TreeBuilder::new();
+        builder.add_child(0, 1);
+        let tree = builder.build().unwrap();
         let initial = QuantumTreeState::from_tree(tree);
         
         let circuit = HopfQuantumCircuit::qft_circuit(1);

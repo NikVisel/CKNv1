@@ -56,13 +56,13 @@ impl HopfInvariantLoss {
         
         // Create forest (product of trees)
         let forest = Forest::from(vec![tree1.clone(), tree2.clone()]);
-        
-        // For simplicity, we embed a forest as sum of tree embeddings
+
+        // For simplicity, we embed a forest as sum of tree embeddings for the
+        // expected result
         let forest_embed_expected = &embed1 + &embed2;
-        
-        // Compute actual forest embedding (would need forest embedding function)
-        // For now, we use the expected as a placeholder
-        let forest_embed_actual = forest_embed_expected.clone();
+
+        // Compute actual forest embedding using the provided embedding
+        let forest_embed_actual = self.embed_forest(&forest, &embed_fn);
         
         // MSE loss
         let diff = &forest_embed_actual - &forest_embed_expected;
@@ -291,7 +291,9 @@ mod tests {
     #[test]
     fn test_hopf_invariant_loss() {
         let t1 = Tree::new();
-        let t2 = TreeBuilder::new().add_child(0, 1).build().unwrap();
+        let mut builder = TreeBuilder::new();
+        builder.add_child(0, 1);
+        let t2 = builder.build().unwrap();
         
         // Simple embedding function for testing
         let embed_fn = |tree: &Tree| -> Array1<f32> {

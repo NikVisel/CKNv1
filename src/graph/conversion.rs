@@ -203,11 +203,10 @@ mod tests {
 
     #[test]
     fn test_tree_to_graph() {
-        let tree = TreeBuilder::new()
-            .add_child(0, 1)
-            .add_child(0, 2)
-            .build()
-            .unwrap();
+        let mut builder = TreeBuilder::new();
+        builder.add_child(0, 1)
+            .add_child(0, 2);
+        let tree = builder.build().unwrap();
         
         let graph = tree_to_graph(&tree);
         
@@ -221,10 +220,9 @@ mod tests {
 
     #[test]
     fn test_custom_config() {
-        let tree = TreeBuilder::new()
-            .add_child(0, 1)
-            .build()
-            .unwrap();
+        let mut builder = TreeBuilder::new();
+        builder.add_child(0, 1);
+        let tree = builder.build().unwrap();
         
         let config = ConversionConfig {
             undirected: false,

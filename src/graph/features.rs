@@ -211,12 +211,11 @@ mod tests {
 
     #[test]
     fn test_feature_extraction() {
-        let tree = TreeBuilder::new()
-            .add_child(0, 1)
+        let mut builder = TreeBuilder::new();
+        builder.add_child(0, 1)
             .add_child(0, 2)
-            .add_child(1, 3)
-            .build()
-            .unwrap();
+            .add_child(1, 3);
+        let tree = builder.build().unwrap();
         
         let extractor = StandardFeatureExtractor::new();
         let features = extractor.extract_features(&tree);
@@ -233,11 +232,10 @@ mod tests {
 
     #[test]
     fn test_edge_features() {
-        let tree = TreeBuilder::new()
-            .add_child(0, 1)
-            .add_child(0, 2)
-            .build()
-            .unwrap();
+        let mut builder = TreeBuilder::new();
+        builder.add_child(0, 1)
+            .add_child(0, 2);
+        let tree = builder.build().unwrap();
         
         let edge_feats = extract_edge_features(&tree);
         assert_eq!(edge_feats.len(), 2);

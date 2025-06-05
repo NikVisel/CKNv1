@@ -82,11 +82,15 @@ impl HopfRegularizer {
                 // Trees are the same, check embedding consistency
                 let s_emb = self.embed_forest(&s_tree, hopf.clone());
                 let s_s_emb = self.embed_forest(&s_s_tree, hopf.clone());
-                
+
                 // S(S(φ(t))) should equal φ(t)
                 let orig_emb = embeddings.row(i);
                 let diff = &s_s_emb - &orig_emb;
                 involution_loss += diff.dot(&diff) / self.embedding_dim as f32;
+
+                // Additionally enforce φ(S(t)) ≈ -φ(t)
+                let diff2 = &s_emb + &orig_emb;
+                involution_loss += diff2.dot(&diff2) / self.embedding_dim as f32;
             }
         }
         antipode_loss = involution_loss / trees.len() as f32;
