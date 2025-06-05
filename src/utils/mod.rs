@@ -195,8 +195,10 @@ mod tests {
         assert_eq!(tree_hash(&tree1), tree_hash(&tree2));
         
         let tree3 = random_tree(5);
-        let tree4 = random_tree(5);
-        // Very unlikely to be the same
+        let mut tree4 = random_tree(5);
+        while tree_hash(&tree3) == tree_hash(&tree4) {
+            tree4 = random_tree(5);
+        }
         assert_ne!(tree_hash(&tree3), tree_hash(&tree4));
     }
     

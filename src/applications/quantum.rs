@@ -73,10 +73,10 @@ impl QuantumTreeState {
         for (i, tree) in self.basis.iter().enumerate() {
             let cop = tree.coproduct();
             let amp = self.amplitudes[i];
-            
+
             // Create superposition of coproduct terms
             let n_terms = cop.len() as f64;
-            for (_forest, trunk) in cop {
+            for ((_, trunk), _) in cop {
                 // Use the trunk as the new basis state
                 new_basis.push(trunk);
                 new_amplitudes.push(amp / n_terms.sqrt());
@@ -146,7 +146,7 @@ impl QuantumTreeState {
     }
 
     /// Get expectation value of an observable
-    pub fn expectation_value(&self, observable: &TreeObservable) -> f64 {
+    pub fn expectation_value(&self, observable: &dyn TreeObservable) -> f64 {
         let mut expectation = 0.0;
         
         for (i, tree) in self.basis.iter().enumerate() {
@@ -376,7 +376,9 @@ mod tests {
     #[test]
     fn test_quantum_state() {
         let tree1 = TreeBuilder::new().build().unwrap();
-        let tree2 = TreeBuilder::new().add_child(0, 1).build().unwrap();
+        let mut builder = TreeBuilder::new();
+        builder.add_child(0, 1);
+        let tree2 = builder.build().unwrap();
         
         let mut state = QuantumTreeState::new(vec![tree1, tree2]);
         state.apply_hopf_gate(&HopfGate::Hadamard);
@@ -387,7 +389,9 @@ mod tests {
 
     #[test]
     fn test_quantum_circuit() {
-        let tree = TreeBuilder::new().add_child(0, 1).build().unwrap();
+        let mut builder = TreeBuilder::new();
+        builder.add_child(0, 1);
+        let tree = builder.build().unwrap();
         let initial = QuantumTreeState::from_tree(tree);
         
         let circuit = HopfQuantumCircuit::qft_circuit(1);

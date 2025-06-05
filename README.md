@@ -205,3 +205,4 @@ at your option.
 ## Acknowledgments
 
 This implementation is inspired by the beautiful mathematics of Alain Connes and Dirk Kreimer, bridging abstract algebra with concrete computational applications. 
+For details on dataset preparation and training see [docs/TRAINING_GUIDE.md](docs/TRAINING_GUIDE.md).

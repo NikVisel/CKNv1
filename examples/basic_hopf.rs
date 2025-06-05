@@ -8,15 +8,14 @@ fn main() {
 
     // Create some trees
     let t1 = Tree::new(); // Single node
-    let t2 = TreeBuilder::new()
-        .add_child(0, 1)
-        .build()
-        .unwrap();
-    let t3 = TreeBuilder::new()
-        .add_child(0, 1)
-        .add_child(0, 2)
-        .build()
-        .unwrap();
+    let mut b2 = TreeBuilder::new();
+    b2.add_child(0, 1);
+    let t2 = b2.build().unwrap();
+
+    let mut b3 = TreeBuilder::new();
+    b3.add_child(0, 1);
+    b3.add_child(0, 2);
+    let t3 = b3.build().unwrap();
 
     println!("Tree 1 (single node):");
     println!("{:?}", t1);
